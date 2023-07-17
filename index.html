@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>STL Viewer</title>
+        <link rel="stylesheet" href="css/style.css">
+        <script src="./scripts/stl_viewer/stl_viewer.min.js"></script>
+        <script src="./scripts/MultiStlViewer.js"></script>
+    </head>
+
+    <body onload="loadMultiStlViewer([
+        // Customize here STL files list
+        'Artery.stl',
+        'Closure.stl',
+        'Embolization.stl',
+        'Kidneys.stl',
+        'Liver.stl',
+        'Tumor.stl',
+        'Vein.stl'
+      ])">
+
+      <div class="dashboard">
+        <div id="stl_cont"></div>
+      </div>
+      <div class="sidebar">
+        <ul id="files_list"></ul>
+      </div>
+      <div id="loader" style="display:none"></div>
+    </body>
+</html>

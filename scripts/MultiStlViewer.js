@@ -12,7 +12,7 @@ var colors = ['#FF6633', '#FFB399', '#FF33FF', '#FFFF99', '#00B3E6',
 
 // Variables for mouse pointer
 let intersectedObject, intersectedPoint, raycaster, pointer;
-let markerObjectIds = [];
+let markers = [];
 
 function model_loaded_callback(model_id) {
   // Get first available color
@@ -77,7 +77,7 @@ function colorPointedObject() {
   let intersects = raycaster.intersectObjects( stl_viewer.scene.children, false );
 
   // Remove intersections with markers
-  intersects = intersects.filter((doc) => !markerObjectIds.includes(doc.object.id))
+  intersects = intersects.filter((doc) => !markers.map((marker) => marker.id).includes(doc.object.id))
 
   if ( intersects.length > 0 ) {
     // Update intersected point
@@ -110,6 +110,13 @@ function colorPointedObject() {
 function onDoubleClick() {
   if ( intersectedPoint )
   {
+    // If already two markers, remove the older one
+    if (markers.length == 2) {
+      const olderMarker = markers.shift();
+      const olderMarkerObject = stl_viewer.scene.getObjectById(olderMarker.id);
+      stl_viewer.scene.remove(olderMarkerObject);
+    }
+
     // Add mesh
     const geometry = new THREE.SphereGeometry( 2, 8, 8 ); 
     const material = new THREE.MeshBasicMaterial( { color: 0xff0000 } ); 
@@ -117,8 +124,16 @@ function onDoubleClick() {
     stl_viewer.scene.add( circle );
     circle.position.copy(intersectedPoint);
 
-    // Save id to filter raycaster intersections
-    markerObjectIds.push(circle.id);
+    // Save marker
+    markers.push({
+      id:circle.id,
+      position: intersectedPoint
+    });
+
+    // Log distance between two markers
+    if (markers.length == 2) {
+      console.log(markers[0].position.distanceTo(markers[1].position));
+    }
   }
 }
 

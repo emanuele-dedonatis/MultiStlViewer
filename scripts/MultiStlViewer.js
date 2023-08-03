@@ -11,7 +11,8 @@ var colors = ['#FF6633', '#FFB399', '#FF33FF', '#FFFF99', '#00B3E6',
               '#E64D66', '#4DB380', '#FF4D4D', '#99E6E6', '#6666FF'];
 
 // Variables for mouse pointer
-let INTERSECTED, raycaster, pointer;
+let intersectedObject, intersectedPoint, raycaster, pointer;
+let markerObjectIds = [];
 
 function model_loaded_callback(model_id) {
   // Get first available color
@@ -55,6 +56,7 @@ function all_loaded_callback() {
   raycaster = new THREE.Raycaster();
   pointer = new THREE.Vector2();
   document.addEventListener( 'mousemove', onPointerMove );
+  addEventListener("dblclick", onDoubleClick);
   colorPointedObject();
 }
 
@@ -71,30 +73,53 @@ function colorPointedObject() {
   // Add raycaster
   raycaster.setFromCamera( pointer, stl_viewer.camera );
 
-  // Intersections are returned sorted by distance, closest first
-  const intersects = raycaster.intersectObjects( stl_viewer.scene.children, false );
+  // Get intersections
+  let intersects = raycaster.intersectObjects( stl_viewer.scene.children, false );
+
+  // Remove intersections with markers
+  intersects = intersects.filter((doc) => !markerObjectIds.includes(doc.object.id))
 
   if ( intersects.length > 0 ) {
+    // Update intersected point
+    intersectedPoint = intersects[ 0 ].point;
+    
+    // Get first instersection since are returned sorted by distance, closest first
+    if ( intersectedObject != intersects[ 0 ].object ) {
 
-    if ( INTERSECTED != intersects[ 0 ].object ) {
+      if ( intersectedObject ) intersectedObject.material.color.setHex( intersectedObject.currentHex );
 
-      if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
-
-      INTERSECTED = intersects[ 0 ].object;
-      INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
-      INTERSECTED.material.emissive.setHex( 0xff0000 );
+      intersectedObject = intersects[ 0 ].object;
+      intersectedObject.currentHex = intersectedObject.material.color.getHex();
+      intersectedObject.material.color.setHex( 0xffff00 );
 
     }
 
   } else {
+    // Clear intersected point
+    intersectedPoint = null;
 
-    if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+    if ( intersectedObject ) intersectedObject.material.color.setHex( intersectedObject.currentHex );
 
-    INTERSECTED = null;
+    intersectedObject = null;
 
   }
 
   stl_viewer.renderer.render( stl_viewer.scene, stl_viewer.camera );
+}
+
+function onDoubleClick() {
+  if ( intersectedPoint )
+  {
+    // Add mesh
+    const geometry = new THREE.SphereGeometry( 2, 8, 8 ); 
+    const material = new THREE.MeshBasicMaterial( { color: 0xff0000 } ); 
+    const circle = new THREE.Mesh( geometry, material );
+    stl_viewer.scene.add( circle );
+    circle.position.copy(intersectedPoint);
+
+    // Save id to filter raycaster intersections
+    markerObjectIds.push(circle.id);
+  }
 }
 
 function loadMultiStlViewer(files) {

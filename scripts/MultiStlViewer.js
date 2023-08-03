@@ -13,6 +13,7 @@ var colors = ['#FF6633', '#FFB399', '#FF33FF', '#FFFF99', '#00B3E6',
 // Variables for mouse pointer
 let intersectedObject, intersectedPoint, raycaster, pointer;
 let markers = [];
+let markerLineId;
 
 function model_loaded_callback(model_id) {
   // Get first available color
@@ -77,7 +78,7 @@ function colorPointedObject() {
   let intersects = raycaster.intersectObjects( stl_viewer.scene.children, false );
 
   // Remove intersections with markers
-  intersects = intersects.filter((doc) => !markers.map((marker) => marker.id).includes(doc.object.id))
+  intersects = intersects.filter((doc) => !markers.map((marker) => marker.id).includes(doc.object.id) && doc.object.id !== markerLineId)
 
   if ( intersects.length > 0 ) {
     // Update intersected point
@@ -110,11 +111,17 @@ function colorPointedObject() {
 function onDoubleClick() {
   if ( intersectedPoint )
   {
-    // If already two markers, remove the older one
+    // If already two markers
     if (markers.length == 2) {
+      // Remove the older one
       const olderMarker = markers.shift();
       const olderMarkerObject = stl_viewer.scene.getObjectById(olderMarker.id);
       stl_viewer.scene.remove(olderMarkerObject);
+
+      // Remove line
+      const markerLineObject = stl_viewer.scene.getObjectById(markerLineId);
+      stl_viewer.scene.remove(markerLineObject);
+      markerLineId = null;
     }
 
     // Add mesh
@@ -130,9 +137,16 @@ function onDoubleClick() {
       position: intersectedPoint
     });
 
-    // Log distance between two markers
     if (markers.length == 2) {
+      // Log distance between two markers
       console.log(markers[0].position.distanceTo(markers[1].position));
+
+      // Add line
+      const material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
+      const geometry = new THREE.BufferGeometry().setFromPoints( markers.map((marker) => marker.position) );
+      const line = new THREE.Line( geometry, material );
+      stl_viewer.scene.add( line );
+      markerLineId = line.id;
     }
   }
 }

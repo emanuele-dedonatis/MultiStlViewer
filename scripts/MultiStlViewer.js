@@ -10,6 +10,9 @@ var colors = ['#FF6633', '#FFB399', '#FF33FF', '#FFFF99', '#00B3E6',
               '#FF3380', '#CCCC00', '#66E64D', '#4D80CC', '#9900B3', 
               '#E64D66', '#4DB380', '#FF4D4D', '#99E6E6', '#6666FF'];
 
+// Variables for mouse pointer
+let INTERSECTED, raycaster, pointer;
+
 function model_loaded_callback(model_id) {
   // Get first available color
   const color = colors.shift();
@@ -33,7 +36,6 @@ function model_loaded_callback(model_id) {
                               onchange="setModelOpacity(${model_id}, this.value)"
                               >
                     </li>`;
-
 }
 
 function setModelOpacity(model_id, value) {
@@ -48,6 +50,51 @@ function loading_progress_callback() {
 function all_loaded_callback() {
   // All models have been loaded: hide loader
   document.getElementById("loader").style.display = "none";
+  
+  // Configure mouse pointer
+  raycaster = new THREE.Raycaster();
+  pointer = new THREE.Vector2();
+  document.addEventListener( 'mousemove', onPointerMove );
+  colorPointedObject();
+}
+
+function onPointerMove( event ) {
+	// Update mouse coordinates
+  pointer.x = ( ( event.clientX - stl_viewer.renderer.domElement.offsetLeft ) / stl_viewer.renderer.domElement.clientWidth ) * 2 - 1;
+  pointer.y = - ( ( event.clientY - stl_viewer.renderer.domElement.offsetTop ) / stl_viewer.renderer.domElement.clientHeight ) * 2 + 1;
+}
+
+function colorPointedObject() {
+  // Recall this function for animation
+  requestAnimationFrame( colorPointedObject );
+
+  // Add raycaster
+  raycaster.setFromCamera( pointer, stl_viewer.camera );
+
+  // Intersections are returned sorted by distance, closest first
+  const intersects = raycaster.intersectObjects( stl_viewer.scene.children, false );
+
+  if ( intersects.length > 0 ) {
+
+    if ( INTERSECTED != intersects[ 0 ].object ) {
+
+      if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+
+      INTERSECTED = intersects[ 0 ].object;
+      INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
+      INTERSECTED.material.emissive.setHex( 0xff0000 );
+
+    }
+
+  } else {
+
+    if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+
+    INTERSECTED = null;
+
+  }
+
+  stl_viewer.renderer.render( stl_viewer.scene, stl_viewer.camera );
 }
 
 function loadMultiStlViewer(files) {
